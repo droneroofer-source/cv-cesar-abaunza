@@ -1344,15 +1344,13 @@ async function downloadPDF() {
 
         // A4 dimensions in mm and px ratio
         const A4_W_MM = 210, A4_H_MM = 297;
-        const SCALE   = 2;       // retina quality
+        const SCALE   = 2.5;       // Aumentado de 2 a 2.5 para mejor legibilidad
         const PX_PER_MM = 3.7795 * SCALE;
         const A4_W_PX = Math.round(A4_W_MM * PX_PER_MM);
 
         const pdf = new jsPDF({ orientation:'portrait', unit:'mm', format:'a4' });
 
         // ── SECTIONS TO CAPTURE ───────────────────────────────
-        // Each entry: { selector, label }
-        // The hero (#home) gets special treatment (includes photo)
         const sectionDefs = [
             { id:'home',       label: es ? '1 — Perfil'       : '1 — Profile' },
             { id:'about',      label: es ? '2 — Sobre mí'     : '2 — About'   },
@@ -1378,7 +1376,42 @@ async function downloadPDF() {
             // Temporarily make section visible and remove its section border
             el.style.display = 'block';
 
-            // Capture at fixed 1200px viewport width → A4 proportions
+            // ── INCREASE FONT SIZE FOR PDF ONLY ──────────────
+            const originalStyles = [];
+
+            // Store original styles and apply larger fonts
+            const elementsToEnlarge = el.querySelectorAll('h1, h2, h3, h4, h5, p, li, .tl-desc, .stat-txt, .focus-sub, .srv-card p, .stat-num, .hero-name, .lead-form-title, .guide-title, .timeline, .exp-layout, .about-grid, .projects-grid, .services-grid, .skills-cols, .contact-grid, .hero-desc, .lead-left h2, .lead-right .lead-form-title, .tl-role, .tl-company, .edu-school, .focus-title, .project-card h3, .srv-card h3, .skill-list li, .pill, .tag, .badge, .label, .hero-tag, .contact-item, .social-link, .btn');
+            
+            elementsToEnlarge.forEach(el => {
+                const orig = el.style.fontSize;
+                const origLineHeight = el.style.lineHeight;
+                originalStyles.push({ el, orig, origLineHeight });
+                
+                // Aumentar tamaño de letra significativamente para PDF
+                el.style.fontSize = '1.4rem';
+                el.style.lineHeight = '1.8';
+            });
+
+            // Special treatment for headings
+            el.querySelectorAll('h1, h2').forEach(h => {
+                const orig = h.style.fontSize;
+                originalStyles.push({ el: h, orig, origLineHeight: h.style.lineHeight });
+                h.style.fontSize = '2.6rem';
+                h.style.lineHeight = '1.2';
+            });
+            el.querySelectorAll('h3, h4').forEach(h => {
+                const orig = h.style.fontSize;
+                originalStyles.push({ el: h, orig, origLineHeight: h.style.lineHeight });
+                h.style.fontSize = '1.8rem';
+                h.style.lineHeight = '1.4';
+            });
+            el.querySelectorAll('.stat-num').forEach(h => {
+                const orig = h.style.fontSize;
+                originalStyles.push({ el: h, orig, origLineHeight: h.style.lineHeight });
+                h.style.fontSize = '3.2rem';
+            });
+
+            // ── CAPTURE ────────────────────────────────────────
             const canvas = await html2canvas(el, {
                 scale: SCALE,
                 useCORS: true,
@@ -1391,18 +1424,21 @@ async function downloadPDF() {
                 logging: false,
             });
 
+            // ── RESTORE ORIGINAL STYLES ──────────────────────
+            originalStyles.forEach(({ el, orig, origLineHeight }) => {
+                el.style.fontSize = orig;
+                el.style.lineHeight = origLineHeight || '';
+            });
+
             if (pageIndex > 1) pdf.addPage();
 
             // ── FIT TO A4 ─────────────────────────────────────
-            const imgW_mm  = A4_W_MM;                              // full width
+            const imgW_mm  = A4_W_MM;
             const imgH_mm  = (canvas.height / canvas.width) * imgW_mm;
-
-            const MARGIN   = 8;  // mm padding inside page
-            const HEADER_H = 9;  // mm for section label strip
-            const FOOTER_H = 6;  // mm for page number
+            const MARGIN   = 8;
+            const HEADER_H = 9;
+            const FOOTER_H = 6;
             const avail_H  = A4_H_MM - MARGIN * 2 - HEADER_H - FOOTER_H;
-
-            // Scale down if content taller than available area
             const finalW   = A4_W_MM - MARGIN * 2;
             const ratio    = Math.min(1, avail_H / imgH_mm);
             const finalH   = imgH_mm * ratio;
@@ -1410,13 +1446,10 @@ async function downloadPDF() {
             // ── HEADER STRIP ──────────────────────────────────
             pdf.setFillColor(26, 86, 219);
             pdf.rect(0, 0, A4_W_MM, HEADER_H, 'F');
-
             pdf.setFont('helvetica', 'bold');
             pdf.setFontSize(7);
             pdf.setTextColor(255, 255, 255);
             pdf.text(def.label, MARGIN, 6);
-
-            // Right side: name
             pdf.setFont('helvetica', 'normal');
             pdf.setFontSize(6.5);
             pdf.setTextColor(200, 215, 245);
@@ -1430,7 +1463,6 @@ async function downloadPDF() {
             pdf.setDrawColor(228, 233, 242);
             pdf.setLineWidth(0.3);
             pdf.line(MARGIN, A4_H_MM - FOOTER_H, A4_W_MM - MARGIN, A4_H_MM - FOOTER_H);
-
             pdf.setFont('helvetica', 'normal');
             pdf.setFontSize(6);
             pdf.setTextColor(107, 122, 149);
