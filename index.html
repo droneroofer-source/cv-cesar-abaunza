@@ -1282,30 +1282,6 @@ document.getElementById('leadForm').addEventListener('submit', e => {
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 
 <script>
-// ══════════════════════════════════════════════════════════════
-//  PHOTO LOADER
-// ══════════════════════════════════════════════════════════════
-let profilePhotoB64 = null;
-
-function loadProfilePhoto() {
-    const input = document.createElement('input');
-    input.type = 'file';
-    input.accept = 'image/*';
-    input.onchange = e => {
-        const file = e.target.files[0];
-        if (!file) return;
-        const reader = new FileReader();
-        reader.onload = ev => {
-            profilePhotoB64 = ev.target.result;
-            const avatar = document.getElementById('heroAvatar');
-            const placeholder = document.getElementById('heroAvatarPlaceholder');
-            if (avatar) { avatar.src = profilePhotoB64; avatar.style.display = 'block'; }
-            if (placeholder) placeholder.style.display = 'none';
-        };
-        reader.readAsDataURL(file);
-    };
-    input.click();
-}
 
 // ══════════════════════════════════════════════════════════════
 //  PDF GENERATOR — one clean A4 page per section
